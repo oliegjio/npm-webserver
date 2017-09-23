@@ -1,7 +1,9 @@
 const http = require('http')
 const SerialPort = require('serialport')
 const stringDecoder = require('string_decoder')
+const si = require('systeminformation')
 const sqlite = require('sqlite3')
+const Promise = require('promise')
 const fs = require('fs')
 const port = 8000
 
@@ -15,14 +17,15 @@ db.on('error', (error) => {
 
 var sPort = new SerialPort('/dev/ttyUSB0', {baudRate: 9600})
 
-var theData
+var dataNow
 
 var rnd = () => {
     return Math.floor(Math.random() * (100 - 50) + 50)
 }
 
 sPort.on('data', (data) => {
-    var newData = decoder.write(data)
+    var newData = decoder.write(data).replace(/(\r\n|\n|\r)/gm,'')
+    var splitData = newData.split(' ')
 
     var date = new Date()
     var year = date.getFullYear()
@@ -31,37 +34,53 @@ sPort.on('data', (data) => {
     var hours = date.getHours()
     var minutes = date.getMinutes()
     var seconds = date.getSeconds()
-    var formatedDate = year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds
+    var shortDate = hours + ':' + minutes + ':' + seconds 
+    var longDate = year + '-' + month + '-' + day + ' ' + shortDate
 
-    // theData = formatedDate + ' ' + newData.replace(/(\r\n|\n|\r)/gm,'') + "128\n"
-    // theData = hours + ':' + minutes + ':' + seconds + ' ' + '13 10 23 54 45 128\n'
-    theData = `${hours}:${minutes}:${seconds} ${rnd()} ${rnd()} ${rnd()} ${rnd()} ${rnd()} ${rnd()}\n`
-    console.log(theData)
+    si.cpuTemperature((data) => {
+        temperature = data.max
 
-    db.exec(`INSERT INTO temperatures (date, t1, t2, t3, t4, t5, t6) VALUES("${formatedDate}", 13, 10, 23, 54, 45, 128)`)
+        dataNow = `${shortDate} ${newData}${temperature}\n`
+        console.log(dataNow)
 
-    // fs.appendFile('/tmp/test', theData, (error) => {
-    //     if (error) {
-    //         console.log(error)
-    //     }
-    // })
+        db.exec(`INSERT INTO temperatures (date, t1, t2, t3, t4, t5, t6) VALUES("${shortDate}", "${splitData[0]}", "${splitData[1]}", "${splitData[2]}", "${splitData[3]}", "${splitData[4]}", "${temperature}")`)
+    }) 
 })
 
 sPort.on('error', (error) => {
     console.log(error)
 })
 
-var sendData = (response) => {
+var sendDataNow = (response) => {
     response.setHeader("Access-Control-Allow-Origin", "*");
-    response.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    response.write(theData)
+    response.write(dataNow)
+}
+
+var sendDataAll = (response) => {
+    var newData
+    db.each(`SELECT * FROM temperatures`, (error, row) => {
+        var date = data.date
+        var t1 = data.t1
+        var t2 = data.t2
+        var t3 = data.t3
+        var t4 = data.t4
+        var t5 = data.t5
+        var t6 = data.t6
+        newData += `${date} ${t1} ${t2} ${t3} ${t4} ${t5} ${t6}`
+    })
+    response.write(newData)
 }
 
 const requestHandler = (request, response) => {
     switch (request.url) {
-        case '/get-data':
-            sendData(response);
-            break;
+        case '/get-data-now':
+            sendDataNow(response)
+            break
+        case '/get-data-all':
+            sendDataAll(response)
+            break
+        default:
+            response.write('Wrong Request!')
     }
     response.end()
 }
