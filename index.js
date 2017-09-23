@@ -17,6 +17,10 @@ var sPort = new SerialPort('/dev/ttyUSB0', {baudRate: 9600})
 
 var theData
 
+var rnd = () => {
+    return Math.floor(Math.random() * (100 - 50) + 50)
+}
+
 sPort.on('data', (data) => {
     var newData = decoder.write(data)
 
@@ -30,7 +34,8 @@ sPort.on('data', (data) => {
     var formatedDate = year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds
 
     // theData = formatedDate + ' ' + newData.replace(/(\r\n|\n|\r)/gm,'') + "128\n"
-    theData = formatedDate + ' ' + '13 10 23 54 45 128\n'
+    // theData = hours + ':' + minutes + ':' + seconds + ' ' + '13 10 23 54 45 128\n'
+    theData = `${hours}:${minutes}:${seconds} ${rnd()} ${rnd()} ${rnd()} ${rnd()} ${rnd()} ${rnd()}\n`
     console.log(theData)
 
     db.exec(`INSERT INTO temperatures (date, t1, t2, t3, t4, t5, t6) VALUES("${formatedDate}", 13, 10, 23, 54, 45, 128)`)
