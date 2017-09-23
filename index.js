@@ -1,46 +1,63 @@
 const http = require('http')
 const SerialPort = require('serialport')
 const stringDecoder = require('string_decoder')
-const port = 8000
+const sqlite = require('sqlite3')
 const fs = require('fs')
+const port = 8000
 
 const decoder = new stringDecoder.StringDecoder('utf8')
 
-var sPort = new SerialPort('/dev/ttyUSB0', {
-	baudRate: 57600
+var db = new sqlite.Database('./data.db')
+db.run('CREATE TABLE IF NOT EXISTS temperatures (date DATETIME, t1 INT, t2 INT, t3 INT, t4 INT, t5 INT, t6 INT)')
+db.on('error', (error) => {
+    console.log(error)
 })
 
+var sPort = new SerialPort('/dev/ttyUSB0', {baudRate: 9600})
+
+var theData
+
 sPort.on('data', (data) => {
-    var newData = data.toString('utf8')
-    // var newData = decoder.write(data)
-    console.log(newData)
+    var newData = decoder.write(data)
 
-    // console.log(data)
-    // console.log(data.toString('utf8'))
+    var date = new Date()
+    var year = date.getFullYear()
+    var month = date.getMonth()
+    var day = date.getDate()
+    var hours = date.getHours()
+    var minutes = date.getMinutes()
+    var seconds = date.getSeconds()
+    var formatedDate = year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds
 
-    fs.writeFile('/tmp/test.txt', newData, (error) => {
-        if (error) {
-            console.log(error)
-        }
-    })
+    // theData = formatedDate + ' ' + newData.replace(/(\r\n|\n|\r)/gm,'') + "128\n"
+    theData = formatedDate + ' ' + '13 10 23 54 45 128\n'
+    console.log(theData)
+
+    db.exec(`INSERT INTO temperatures (date, t1, t2, t3, t4, t5, t6) VALUES("${formatedDate}", 13, 10, 23, 54, 45, 128)`)
+
+    // fs.appendFile('/tmp/test', theData, (error) => {
+    //     if (error) {
+    //         console.log(error)
+    //     }
+    // })
 })
 
 sPort.on('error', (error) => {
     console.log(error)
 })
 
-var sendData = () => {
-    // Get data from serial port.
-    // Send data.
+var sendData = (response) => {
+    response.setHeader("Access-Control-Allow-Origin", "*");
+    response.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    response.write(theData)
 }
 
 const requestHandler = (request, response) => {
     switch (request.url) {
         case '/get-data':
-            sendData();
+            sendData(response);
             break;
     }
-    // console.log(request.url)
     response.end()
 }
 
