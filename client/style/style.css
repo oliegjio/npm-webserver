@@ -1,0 +1,13 @@
+body {
+	max-width: 1400px;
+	margin: auto;
+	font-family: "Noto Serif", Georgia, Times, serif;
+}
+
+#canvas {
+	border: 10px solid lightgrey;
+}
+
+label {
+	color: white;
+}
