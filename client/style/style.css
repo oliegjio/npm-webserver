@@ -5,9 +5,10 @@ body {
 }
 
 #canvas {
-	border: 10px solid black;
+	border: 10px solid lightgrey;
 }
 
 label {
 	color: white;
 }
+

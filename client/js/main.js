@@ -1,19 +1,19 @@
 var a, b, c, d;
 var tArr = [
-			[-10,8,3,4,10,6,7,4, 8],
+			// [-10,8,3,4,10,6,7,4, 8],
 			// [1,8,3,4,1,6,1,4, 1],
 			// [1,8,3,4,1,6,1,4, 1],
 			// [1,8,3,4,1,6,1,4, 1],
 			// [1,8,3,4,1,6,1,4, 1],
 			// [1,8,3,4,1,6,1,4, 1],
-			// [],
 			[],
 			[],
 			[],
 			[],
-			[]
+			[],
+			[],
 		];
-var time = [1,2,3,4,5,6,7,8];
+var time = [];
 var clr;
 var input = document.querySelectorAll("input");
 
@@ -22,13 +22,10 @@ function setup()
 	var canvas = createCanvas(1300, 700);
 	canvas.id("canvas")
 
-	// for (var i = 0; i < 1000; i++)
-	// {
-	// 	tArr[0].push(6);
-	// 	time.push(time[time.length-1]+1);
-	// }
-
-	var acceptStr = "1:2:1 111 2 3 4 10 6\n00:00:15 6 5 4 4 5 6\n00:00:18 2 5 4 3 2 1\n";
+	//test
+	// var acceptStr = "00:00:12 -1 -200 3 4 10 -600\n00:00:15 6 5 4 4 5 6\n00:00:18 2 5 -4 -0030 2 -1000\n";
+	// parseStr(acceptStr);
+	// console.log(tArr);
 
 	clr = [
 		color(0,0,255),
@@ -43,9 +40,21 @@ function setup()
 		label[i].style.background = "rgb(" + clr[i].levels[0] + "," +
 								clr[i].levels[1] + "," +
 								clr[i].levels[2] + ")";
-	parseStr(acceptStr);
-	console.log(tArr);
-	console.log(time);
+	document.getElementById("all-graph").onclick = function()
+	{
+		tArr = [
+			[],
+			[],
+			[],
+			[],
+			[],
+			[],
+		];
+		httpGet("http://192.168.0.148:8000/get-data-all", "text", parseStr, function()
+		{
+			console.log("Not msg whith server")
+		});
+	};
 };
 
 function draw()
@@ -99,13 +108,21 @@ function parseStr(str)
 		time[time.length-1] += tmp;
 
 		i++; //чтобы сдвинуться с пробела на цифру
-		for (var j = 0; j < 6; j++)
+		for (var j = 0, Yn; j < 6; j++, i++)
 		{
+			if (str[i] === "-")
+			{
+				Yn = true;
+				i++;
+			}
+			else
+				Yn = false
 			for (tmp = +str[i++]; (str[i] !== "\n") && (str[i] !== " "); i++)
 			{
 				tmp *= 10;
 				tmp += +str[i];
 			}
+			if (Yn) tmp *= -1;
 			tArr[j].push(tmp);
 		}
 	}
@@ -165,23 +182,10 @@ function secToHMS(s)
 	return hour + ":" +  minute + ":" + sec;
 };
 
-function httpGeta(theUrl, callback)
+setInterval(function ()
 {
-	// var xmlHttp = new XMLHttpRequest();
-	// xmlHttp.onreadystatechange = function() {
-	// 	if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-	// 		callback(xmlHttp.responseText);
-	// }
-	// xmlHttp.open("GET", theUrl, false); // true for asynchronous
-	// xmlHttp.send(null);
-};
-
-// setInterval(function ()
-// {
-// 	httpGet("http://192.168.0.148:8000/get-data", "text", function(data){
-// 		parseStr(data);
-// 	}, function()
-// 	{
-// 		console.log("Not msg whith server")
-// 	});
-// }, 1000);
+	httpGet("http://192.168.0.148:8000/get-data-now", "text", parseStr, function()
+	{
+		console.log("Not msg whith server")
+	});
+}, 1000);
