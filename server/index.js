@@ -55,6 +55,12 @@ sPort.on('data', (data) => {
     }) 
 })
 
+// sPort.write('some data', function(error) {
+//   if (err) {
+//     return console.log(error.message)
+//   }
+// })
+
 sPort.on('error', (error) => {
     console.log(error)
 })
